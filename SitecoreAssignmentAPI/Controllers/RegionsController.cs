@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using SitecoreAssignmentAPI.Data;
 using SitecoreAssignmentAPI.Models.Domain;
 using SitecoreAssignmentAPI.Models.DTO;
+using SitecoreAssignmentAPI.Repositories;
 
 namespace SitecoreAssignmentAPI.Controllers
 {
@@ -15,10 +16,12 @@ namespace SitecoreAssignmentAPI.Controllers
     public class RegionsController : ControllerBase
     {
         private readonly WalksDbContext dbContext;
+        private readonly IRegionRepository regionRepository;
 
-        public RegionsController(WalksDbContext dbContext)
+        public RegionsController(WalksDbContext dbContext, IRegionRepository regionRepository)
         {
             this.dbContext = dbContext;
+            this.regionRepository = regionRepository;
         }
 
         // Get all regions
@@ -28,7 +31,7 @@ namespace SitecoreAssignmentAPI.Controllers
         public async Task<IActionResult> GetAll()
         {
             // Get Data from the Database - Domain models
-            var regionsDomain = await dbContext.Regions.ToListAsync();
+            var regionsDomain = await regionRepository.GetAllAsync();
 
             // Map Domain Models to DTOs
             var regionsDto = new List<RegionDto>();
@@ -58,7 +61,7 @@ namespace SitecoreAssignmentAPI.Controllers
 
             // Grt Data from the Database - Domain models
 
-            var regionDomain = await dbContext.Regions.FirstOrDefaultAsync(x => x.Id == id);  
+            var regionDomain = await regionRepository.GetByIdAsync(id);
 
             if (regionDomain == null)
             {
@@ -94,9 +97,8 @@ namespace SitecoreAssignmentAPI.Controllers
             };
 
             // Use Domain model to create region
-            await dbContext.Regions.AddAsync(regionDomainModel);
-            await dbContext.SaveChangesAsync();
-
+            await regionRepository.CreateAsync(regionDomainModel);
+ 
             // Map Domain model back to DTO
             var regionDto = new RegionDto
             {
@@ -116,18 +118,21 @@ namespace SitecoreAssignmentAPI.Controllers
         [Route("{id:Guid}")]
         public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] UpdateRegionRequestDto updateRegionRequestDto)
         {
-            var regionDomainModel = await dbContext.Regions.FirstOrDefaultAsync(x => x.Id == id);
+
+            // Map dto to domain model
+            var regionDomainModel = new Region
+            {
+                Code = updateRegionRequestDto.Code,
+                Name = updateRegionRequestDto.Name,
+                RegionImageUrl = updateRegionRequestDto.RegionImageUrl
+            };
+
+            regionDomainModel = await regionRepository.UpdateAsync(id, regionDomainModel);
+
             if (regionDomainModel == null)
             {
                 return NotFound();
             }
-
-            // Map DTO to Domain Model
-            regionDomainModel.Code = updateRegionRequestDto.Code;
-            regionDomainModel.Name = updateRegionRequestDto.Name;
-            regionDomainModel.RegionImageUrl = updateRegionRequestDto.RegionImageUrl;
-
-            await dbContext.SaveChangesAsync();
 
             // convert domain model to DTO
             var regionDto = new RegionDto
@@ -148,16 +153,14 @@ namespace SitecoreAssignmentAPI.Controllers
         [Route("{id:Guid}")]
         public async Task<IActionResult> Delete([FromRoute] Guid id)
         {
-            var regionDomainModel = await dbContext.Regions.FirstOrDefaultAsync(x => x.Id == id);
+            var regionDomainModel = await regionRepository.DeleteAsync(id);
 
             if (regionDomainModel == null)
             {
                 return NotFound();
             }
 
-            // Delete region
-            dbContext.Regions.Remove(regionDomainModel);
-            await dbContext.SaveChangesAsync();
+            
 
             // return deleted Region back
             // domain model to Dto
