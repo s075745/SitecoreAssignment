@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -6,6 +7,7 @@ using SitecoreAssignmentAPI.Data;
 using SitecoreAssignmentAPI.Models.Domain;
 using SitecoreAssignmentAPI.Models.DTO;
 using SitecoreAssignmentAPI.Repositories;
+using System.Collections.Generic;
 
 namespace SitecoreAssignmentAPI.Controllers
 {
@@ -17,11 +19,13 @@ namespace SitecoreAssignmentAPI.Controllers
     {
         private readonly WalksDbContext dbContext;
         private readonly IRegionRepository regionRepository;
+        private readonly IMapper mapper;
 
-        public RegionsController(WalksDbContext dbContext, IRegionRepository regionRepository)
+        public RegionsController(WalksDbContext dbContext, IRegionRepository regionRepository,IMapper mapper)
         {
             this.dbContext = dbContext;
             this.regionRepository = regionRepository;
+            this.mapper = mapper;
         }
 
         // Get all regions
@@ -33,18 +37,21 @@ namespace SitecoreAssignmentAPI.Controllers
             // Get Data from the Database - Domain models
             var regionsDomain = await regionRepository.GetAllAsync();
 
-            // Map Domain Models to DTOs
-            var regionsDto = new List<RegionDto>();
-            foreach (var regionDomain in regionsDomain)
-            {
-                regionsDto.Add(new RegionDto()
-                {
-                    Id = regionDomain.Id,
-                    Code = regionDomain.Code,
-                    Name = regionDomain.Name,
-                    RegionImageUrl = regionDomain.RegionImageUrl
-                });
-            }
+            //// Map Domain Models to DTOs
+            //var regionsDto = new List<RegionDto>();
+            //foreach (var regionDomain in regionsDomain)
+            //{
+            //    regionsDto.Add(new RegionDto()
+            //    {
+            //        Id = regionDomain.Id,
+            //        Code = regionDomain.Code,
+            //        Name = regionDomain.Name,
+            //        RegionImageUrl = regionDomain.RegionImageUrl
+            //    });
+            //}
+
+            // Map Domain models to DTOs usign the mapping from AutoMapper
+            var regionsDto = mapper.Map<List<RegionDto>>(regionsDomain);
 
             // Return DTOs
             return Ok(regionsDto);
@@ -69,16 +76,16 @@ namespace SitecoreAssignmentAPI.Controllers
             }
 
             // Map Domain Models to DTOs
-            var regionsDto = new RegionDto
-            {
-                Id = regionDomain.Id,
-                Code = regionDomain.Code,
-                Name = regionDomain.Name,
-                RegionImageUrl = regionDomain.RegionImageUrl
-            };
+            //var regionsDto = new RegionDto
+            //{
+            //    Id = regionDomain.Id,
+            //    Code = regionDomain.Code,
+            //    Name = regionDomain.Name,
+            //    RegionImageUrl = regionDomain.RegionImageUrl
+            //};
 
             // Return DTOs
-            return Ok(regionsDto);
+            return Ok(mapper.Map<RegionDto>(regionDomain));
 
         }
 
@@ -89,24 +96,29 @@ namespace SitecoreAssignmentAPI.Controllers
         public async Task<IActionResult> Create([FromBody] AddRegionRequestDTO addRegionRequestDTO)
         {
             // Map convert DTO to Domain mail
-            var regionDomainModel = new Region
-            {
-                Code = addRegionRequestDTO.Code,
-                Name = addRegionRequestDTO.Name,
-                RegionImageUrl = addRegionRequestDTO.RegionImageUrl
-            };
+            //var regionDomainModel = new Region
+            //{
+            //    Code = addRegionRequestDTO.Code,
+            //    Name = addRegionRequestDTO.Name,
+            //    RegionImageUrl = addRegionRequestDTO.RegionImageUrl
+            //};
+
+            var regionDomainModel = mapper.Map<Region>(addRegionRequestDTO);
 
             // Use Domain model to create region
-            await regionRepository.CreateAsync(regionDomainModel);
+            regionDomainModel = await regionRepository.CreateAsync(regionDomainModel);
  
             // Map Domain model back to DTO
-            var regionDto = new RegionDto
-            {
-                Id = regionDomainModel.Id,
-                Code = regionDomainModel.Code,
-                Name = regionDomainModel.Name,
-                RegionImageUrl = regionDomainModel.RegionImageUrl
-            };
+            //var regionDto = new RegionDto
+            //{
+            //    Id = regionDomainModel.Id,
+            //    Code = regionDomainModel.Code,
+            //    Name = regionDomainModel.Name,
+            //    RegionImageUrl = regionDomainModel.RegionImageUrl
+            //};
+
+            // Map Domain model back to DTO
+            var regionDto = mapper.Map<RegionDto>(regionDomainModel);
 
 
             return CreatedAtAction(nameof(GetById), new { id = regionDomainModel.Id }, regionDto);
@@ -120,12 +132,14 @@ namespace SitecoreAssignmentAPI.Controllers
         {
 
             // Map dto to domain model
-            var regionDomainModel = new Region
-            {
-                Code = updateRegionRequestDto.Code,
-                Name = updateRegionRequestDto.Name,
-                RegionImageUrl = updateRegionRequestDto.RegionImageUrl
-            };
+            //var regionDomainModel = new Region
+            //{
+            //    Code = updateRegionRequestDto.Code,
+            //    Name = updateRegionRequestDto.Name,
+            //    RegionImageUrl = updateRegionRequestDto.RegionImageUrl
+            //};
+
+            var regionDomainModel = mapper.Map<Region>(updateRegionRequestDto);
 
             regionDomainModel = await regionRepository.UpdateAsync(id, regionDomainModel);
 
@@ -135,13 +149,15 @@ namespace SitecoreAssignmentAPI.Controllers
             }
 
             // convert domain model to DTO
-            var regionDto = new RegionDto
-            {
-                Id = regionDomainModel.Id,
-                Code = regionDomainModel.Code,
-                Name = regionDomainModel.Name,
-                RegionImageUrl = regionDomainModel.RegionImageUrl
-            };
+            //var regionDto = new RegionDto
+            //{
+            //    Id = regionDomainModel.Id,
+            //    Code = regionDomainModel.Code,
+            //    Name = regionDomainModel.Name,
+            //    RegionImageUrl = regionDomainModel.RegionImageUrl
+            //};
+
+            var regionDto = mapper.Map<RegionDto>(regionDomainModel);
 
             return Ok(regionDto);
 
@@ -165,15 +181,15 @@ namespace SitecoreAssignmentAPI.Controllers
             // return deleted Region back
             // domain model to Dto
 
-            var regionDto = new RegionDto
-            {
-                Id = regionDomainModel.Id,
-                Code = regionDomainModel.Code,
-                Name = regionDomainModel.Name,
-                RegionImageUrl = regionDomainModel.RegionImageUrl
-            };
+            //var regionDto = new RegionDto
+            //{
+            //    Id = regionDomainModel.Id,
+            //    Code = regionDomainModel.Code,
+            //    Name = regionDomainModel.Name,
+            //    RegionImageUrl = regionDomainModel.RegionImageUrl
+            //};
 
-            return Ok(regionDto);
+            return Ok(mapper.Map<RegionDto>(regionDomainModel));
 
 
         }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SitecoreAssignmentAPI.Data;
+using SitecoreAssignmentAPI.Mappings;
 using SitecoreAssignmentAPI.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +15,8 @@ builder.Services.AddSwaggerGen();
 // Added dependency injection for the DbContext classes and also provided connection string for this this DBContext that is WalksConnectionStrign
 builder.Services.AddDbContext<WalksDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("WalksConnectionString")));
 builder.Services.AddScoped<IRegionRepository,SQLRegionRepository>();
+
+builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));
 
 var app = builder.Build();
 
